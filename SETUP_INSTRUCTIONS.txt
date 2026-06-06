@@ -1,0 +1,47 @@
+═══════════════════════════════════════════════════
+  ResearchMind — Folder Structure & Setup Guide
+═══════════════════════════════════════════════════
+
+REQUIRED FOLDER STRUCTURE:
+───────────────────────────
+your_project/
+├── landing.py              ← Main entry point (run this)
+├── auth.py                 ← OAuth handler
+├── pages/
+│   └── app.py              ← ⚠️  MOVE your app.py HERE
+├── assets/
+│   └── styles.css
+└── .streamlit/
+    └── secrets.toml        ← Add your Google credentials here
+
+STEP 1 — Move app.py into pages/ folder:
+─────────────────────────────────────────
+  mkdir pages
+  mv app.py pages/app.py
+
+STEP 2 — Add these 3 lines at the TOP of pages/app.py:
+────────────────────────────────────────────────────────
+  import sys, os
+  sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+  from auth import require_auth, is_authenticated, logout
+  require_auth()
+
+STEP 3 — Fill in secrets.toml:
+────────────────────────────────
+  GOOGLE_CLIENT_ID     = "your-id.apps.googleusercontent.com"
+  GOOGLE_CLIENT_SECRET = "your-secret"
+  REDIRECT_URI         = "http://localhost:8501"
+
+STEP 4 — Run landing.py (NOT app.py):
+───────────────────────────────────────
+  streamlit run landing.py
+
+HOW IT WORKS:
+─────────────
+  localhost:8501       → landing.py  (login page)
+  localhost:8501/app   → pages/app.py (main app, protected)
+
+  After Google login → auto-redirects to localhost:8501/app
+  If user visits /app without login → redirects back to landing
+
+═══════════════════════════════════════════════════
