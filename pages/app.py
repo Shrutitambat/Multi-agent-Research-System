@@ -407,6 +407,70 @@ def collapsible_result(key, icon, icon_cls, tag, title, body, content_cls="resul
             st.rerun()
 
 
+# ── Top-right logout button ──────────────────────────────────────────────────
+st.markdown("""
+<style>
+.topbar-logout {
+  position: fixed; top: 0; right: 0; z-index: 1001;
+  padding: .85rem 1.4rem;
+  display: flex; align-items: center; gap: 2rem;
+}
+.topbar-user {
+  display: flex; align-items: center; gap: .6rem;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.topbar-user img {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid rgba(99,102,241,.4);
+}
+.topbar-user span {
+  font-size: .78rem; font-weight: 600; color: #f1f5f9;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Render top-right bar with user info + logout
+_pic   = st.session_state.get("user_picture", "")
+_name  = st.session_state.get("user_name", "User")
+_img   = f'<img src="{_pic}" alt="avatar">' if _pic else ""
+st.markdown(f"""
+<div class="topbar-logout">
+  <div class="topbar-user">
+    {_img}
+    <span>{_name}</span>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Invisible top-right logout using Streamlit button with custom CSS
+_col_spacer, _col_logout = st.columns([8, 1])
+with _col_logout:
+    st.markdown("""
+    <style>
+    div[data-testid="column"]:last-child .stButton > button {
+      background: rgba(244,63,94,.1) !important;
+      color: #f43f5e !important;
+      border: 1px solid rgba(244,63,94,.25) !important;
+      border-radius: 8px !important;
+      font-size: .75rem !important;
+      font-weight: 600 !important;
+      padding: .38rem .85rem !important;
+      box-shadow: none !important;
+      letter-spacing: .04em !important;
+      transition: background .2s, border-color .2s !important;
+    }
+    div[data-testid="column"]:last-child .stButton > button:hover {
+      background: rgba(244,63,94,.18) !important;
+      border-color: rgba(244,63,94,.5) !important;
+      transform: none !important;
+      box-shadow: none !important;
+      opacity: 1 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    if st.button("Sign out", key="topbar_logout_btn"):
+        logout()
+
 # ── Hero ──────────────────────────────────────────────────────────────────────
 user_name = st.session_state.get("user_name", "")
 st.markdown(f"""

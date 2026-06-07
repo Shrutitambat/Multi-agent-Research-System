@@ -1,13 +1,3 @@
-"""
-landing.py — ResearchMind Landing Page
-Fixes applied:
-  1. CSS injected inline (no file dependency)
-  2. Auth URL built safely — no crash if secrets missing
-  3. HTML split into small st.markdown() chunks (Streamlit limit fix)
-  4. SVG icons replaced with emoji (no giant logo rendering)
-  5. auth.py imported safely with try/except
-"""
-
 import streamlit as st
 
 st.set_page_config(
@@ -17,622 +7,687 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Auth ─────────────────────────────────────────────────────────────────────
+# ── Auth ──────────────────────────────────────────────────────────────────────
 auth_url = "#"
-
 try:
     from auth import is_authenticated, handle_callback, get_auth_url
-
-    # If already logged in → go directly to app
     if is_authenticated():
         st.switch_page("pages/app.py")
-
-    # Google just redirected back with ?code= → exchange for tokens
     if handle_callback():
         st.switch_page("pages/app.py")
-
-    # Build the Google login URL for buttons
     try:
         auth_url = get_auth_url()
     except Exception:
         auth_url = "#"
-        st.warning("⚠️ Google OAuth not configured. Fill in `.streamlit/secrets.toml`.", icon="🔑")
-
+        st.warning("Google OAuth not configured. Fill in `.streamlit/secrets.toml`.", icon="🔑")
 except ImportError:
     pass
 
+def H(s): st.markdown(s, unsafe_allow_html=True)
+
 # ══════════════════════════════════════════════════════════════════════════════
-#  INLINE CSS  (no file dependency — always works)
+# CSS — exact same palette as app.py
 # ══════════════════════════════════════════════════════════════════════════════
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+H("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
-:root{
-  --bg:#040711; --surface:rgba(255,255,255,0.04); --border:rgba(255,255,255,0.08);
-  --border-hi:rgba(120,100,255,0.4); --accent:#7b5cff; --accent2:#00c8ff;
-  --text:#e8eaf6; --muted:#7b82a0; --success:#00e5b0;
-  --display:'Bricolage Grotesque',sans-serif; --body:'DM Sans',sans-serif;
-  --mono:'JetBrains Mono',monospace;
+:root {
+  --bg:      #03050f;
+  --bg2:     #060916;
+  --surf:    rgba(255,255,255,.04);
+  --surf2:   rgba(255,255,255,.07);
+  --border:  rgba(255,255,255,.07);
+  --bhi:     rgba(99,102,241,.4);
+  --p:       #6366f1;
+  --p2:      #818cf8;
+  --cyan:    #22d3ee;
+  --emerald: #10b981;
+  --rose:    #f43f5e;
+  --text:    #f1f5f9;
+  --muted:   #64748b;
+  --muted2:  #94a3b8;
+  --dp:      'Plus Jakarta Sans', sans-serif;
+  --body:    'Space Grotesk', sans-serif;
+  --mono:    'JetBrains Mono', monospace;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body,[class*="css"],.main,.block-container{
-  background-color:var(--bg)!important; color:var(--text)!important;
-  font-family:var(--body)!important;
-}
-#MainMenu,footer,header,[data-testid="stToolbar"],
-[data-testid="stDecoration"],[data-testid="stStatusWidget"]{
-  visibility:hidden!important; height:0!important;
-}
-.block-container{padding:0!important; max-width:100%!important;}
-::-webkit-scrollbar{width:5px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:rgba(123,92,255,.4);border-radius:3px;}
 
-/* ── NAV ── */
-.rm-nav{
-  position:fixed;top:0;left:0;right:0;z-index:999;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 5vw; height:68px;
-  background:rgba(4,7,17,.75); backdrop-filter:blur(18px) saturate(160%);
-  border-bottom:1px solid var(--border);
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+html, body, [class*="css"], .main, .block-container {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+  font-family: var(--body) !important;
 }
-.rm-logo{
-  font-family:var(--display);font-size:1.4rem;font-weight:800;letter-spacing:-.04em;
-  background:linear-gradient(90deg,#fff 30%,var(--accent));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.rm-logo span{color:var(--accent);-webkit-text-fill-color:var(--accent);}
-.rm-nav-links{display:flex;gap:2.5rem;list-style:none;}
-.rm-nav-links a{
-  font-size:.88rem;font-weight:500;color:var(--muted);
-  text-decoration:none;transition:color .2s;
-}
-.rm-nav-links a:hover{color:var(--text);}
-.rm-btn-nav{
-  display:inline-flex;align-items:center;gap:.5rem;
-  background:linear-gradient(135deg,var(--accent),#4f3ecf);
-  color:#fff;border:none;border-radius:8px;
-  font-family:var(--body);font-size:.85rem;font-weight:600;
-  padding:.55rem 1.3rem;cursor:pointer;text-decoration:none;
-  box-shadow:0 4px 20px rgba(123,92,255,.3);
-  transition:opacity .2s,transform .15s,box-shadow .2s;
-}
-.rm-btn-nav:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 8px 28px rgba(123,92,255,.45);}
+#MainMenu, footer, header,
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] { visibility: hidden !important; height: 0 !important; }
+.block-container { padding: 0 !important; max-width: 100% !important; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,.35); border-radius: 2px; }
 
-/* ── BUTTONS ── */
-.rm-btn-primary{
-  display:inline-flex;align-items:center;gap:.6rem;
-  background:linear-gradient(135deg,var(--accent),#4f3ecf);
-  color:#fff;border:none;border-radius:10px;
-  font-family:var(--body);font-size:.95rem;font-weight:600;
-  padding:.85rem 2rem;cursor:pointer;text-decoration:none;
-  box-shadow:0 6px 30px rgba(123,92,255,.4);
-  transition:transform .2s,box-shadow .2s;
-}
-.rm-btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(123,92,255,.55);}
-.rm-btn-secondary{
-  display:inline-flex;align-items:center;gap:.5rem;
-  background:transparent;color:var(--text);
-  border:1px solid var(--border-hi);border-radius:10px;
-  font-family:var(--body);font-size:.95rem;font-weight:500;
-  padding:.85rem 2rem;cursor:pointer;text-decoration:none;
-  transition:background .2s,border-color .2s,transform .15s;
-}
-.rm-btn-secondary:hover{background:rgba(123,92,255,.08);border-color:var(--accent);transform:translateY(-1px);}
+/* ════ STREAMLIT GRID FIX ════ */
+/* Streamlit wraps markdown in stMarkdown > div > p structure.
+   We need hero-section to be a real CSS grid. 
+   The key is that hero-section is the grid, 
+   and hero-left / hero-right must be direct grid children.
+   Since they're all in ONE H() call, they ARE direct children. */
 
-/* ── HERO ── */
-.rm-hero{
-  min-height:100vh;display:flex;align-items:center;
-  padding:100px 5vw 80px;position:relative;overflow:hidden;
+/* Remove Streamlit's default block wrapper interference */
+.stMarkdown { display: contents !important; }
+.element-container:has(.hero-section) { display: contents !important; }
+
+/* ════ NAVBAR ════ */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 6vw; height: 64px;
+  background: rgba(3,5,15,.9);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border);
 }
-.rm-hero-bg{
-  position:absolute;inset:0;pointer-events:none;z-index:0;
+.nav-logo {
+  font-family: var(--dp); font-size: 1.22rem; font-weight: 800;
+  letter-spacing: -.04em; color: #fff;
+}
+.nav-logo span { color: var(--p2); }
+.nav-links { display: flex; gap: 2.2rem; list-style: none; }
+.nav-links a {
+  font-size: .82rem; font-weight: 500; color: var(--muted);
+  text-decoration: none; transition: color .2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  display: inline-flex; align-items: center; gap: .45rem;
+  background: linear-gradient(135deg, var(--p), #4338ca);
+  color: #fff; border: none; border-radius: 8px;
+  font-family: var(--body); font-size: .8rem; font-weight: 600;
+  padding: .5rem 1.15rem; cursor: pointer; text-decoration: none;
+  box-shadow: 0 0 18px rgba(99,102,241,.28);
+  transition: transform .2s, box-shadow .2s, opacity .2s;
+}
+.nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 22px rgba(99,102,241,.5); opacity: .92; }
+
+/* ════ HERO ════ */
+.hero-section {
+  min-height: 100vh;
+  display: grid !important;
+  grid-template-columns: 55% 45%;
+  align-items: center;
+  padding: 80px 6vw 60px;
+  position: relative;
+  overflow: hidden;
+  gap: 2rem;
+}
+/* ensure Streamlit wrapper doesn't break grid */
+.hero-section > .hero-mesh,
+.hero-section > .hero-dots {
+  display: none; /* handled as absolute positioning */
+}
+.hero-mesh {
+  display: block !important;
+  position: absolute;
+}
+.hero-dots {
+  display: block !important;
+  position: absolute;
+}
+
+/* background layers */
+.hero-mesh {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 80% 60% at 60% 40%,rgba(123,92,255,.13) 0%,transparent 70%),
-    radial-gradient(ellipse 50% 50% at 20% 80%,rgba(0,200,255,.07) 0%,transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 10%,rgba(255,92,168,.05) 0%,transparent 60%);
+    radial-gradient(ellipse 60% 55% at 65% 44%, rgba(99,102,241,.14) 0%, transparent 65%),
+    radial-gradient(ellipse 40% 42% at 14% 72%, rgba(34,211,238,.08) 0%, transparent 55%),
+    radial-gradient(ellipse 48% 36% at 82% 12%, rgba(244,63,94,.06) 0%, transparent 50%);
 }
-.rm-hero-bg::after{
-  content:'';position:absolute;inset:0;
-  background-image:
-    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
-  background-size:60px 60px;
-  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 80%);
+.hero-dots {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(255,255,255,.055) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(ellipse 88% 88% at 50% 50%, black 20%, transparent 80%);
+  animation: dots-drift 24s ease-in-out infinite alternate;
 }
-.rm-hero-left{flex:1;position:relative;z-index:1;max-width:580px;}
-.rm-hero-right{flex:1;position:relative;z-index:1;display:flex;justify-content:center;align-items:center;min-height:460px;}
+@keyframes dots-drift {
+  from { background-position: 0 0; }
+  to   { background-position: 42px 42px; }
+}
 
-.rm-badge{
-  display:inline-flex;align-items:center;gap:.5rem;
-  font-family:var(--mono);font-size:.68rem;letter-spacing:.15em;
-  color:var(--accent2);border:1px solid rgba(0,200,255,.25);
-  background:rgba(0,200,255,.06);border-radius:100px;
-  padding:6px 14px;margin-bottom:1.5rem;
+/* ── LEFT COLUMN ── */
+.hero-left {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: flex-start;
 }
-.rm-badge::before{content:'●';font-size:.45rem;animation:pdot 2s ease infinite;}
-@keyframes pdot{0%,100%{opacity:1;}50%{opacity:.25;}}
 
-.rm-hero h1{
-  font-family:var(--display);
-  font-size:clamp(2.6rem,5vw,3.8rem);
-  font-weight:800;line-height:1.08;letter-spacing:-.04em;
-  color:#fff;margin-bottom:1.4rem;
+.eyebrow {
+  display: inline-flex; align-items: center; gap: .5rem;
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .18em;
+  color: var(--cyan);
+  border: 1px solid rgba(34,211,238,.22);
+  background: rgba(34,211,238,.06);
+  border-radius: 100px; padding: 5px 14px;
+  margin-bottom: 1.75rem; width: fit-content;
+  animation: fade-up .5s ease both;
 }
-.rm-grad{
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+.eyebrow-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--cyan);
+  animation: blink-dot 2s ease infinite; flex-shrink: 0;
 }
-.rm-hero-sub{
-  font-size:1.02rem;line-height:1.75;color:var(--muted);
-  margin-bottom:2.2rem;max-width:500px;
-}
-.rm-hero-btns{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2.5rem;}
+@keyframes blink-dot { 0%,100%{opacity:1;} 50%{opacity:.15;} }
 
-/* ── STATS ── */
-.rm-stats{
-  display:flex;gap:0;flex-wrap:wrap;
-  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+.hero-h1 {
+  font-family: var(--dp) !important;
+  font-size: clamp(2.6rem, 3.8vw, 3.8rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.06 !important;
+  letter-spacing: -.05em !important;
+  color: #fff !important;
+  margin-bottom: 1.4rem !important;
+  animation: fade-up .5s .07s ease both;
 }
-.rm-stat{
-  flex:1;min-width:120px;padding:1.5rem 1rem;
-  border-right:1px solid var(--border);text-align:center;
+.hero-grad {
+  background: linear-gradient(90deg, var(--p2) 0%, var(--cyan) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.rm-stat:last-child{border-right:none;}
-.rm-stat-val{
-  font-family:var(--display);font-size:1.9rem;font-weight:800;
-  letter-spacing:-.04em;
-  background:linear-gradient(90deg,#fff,var(--accent));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.rm-stat-lbl{font-size:.72rem;color:var(--muted);margin-top:3px;font-family:var(--mono);}
 
-/* ── AGENT DIAGRAM ── */
-.rm-diagram{position:relative;width:400px;height:400px;}
-.rm-orb{
-  position:absolute;border-radius:50%;filter:blur(55px);pointer-events:none;
+.hero-sub {
+  font-size: .97rem; line-height: 1.8; color: var(--muted2);
+  max-width: 460px; margin-bottom: 2.2rem;
+  animation: fade-up .5s .14s ease both;
 }
-.rm-orb-1{width:320px;height:320px;background:rgba(123,92,255,.17);top:5%;left:0%;}
-.rm-orb-2{width:200px;height:200px;background:rgba(0,200,255,.12);bottom:5%;right:5%;}
-.rm-center{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:82px;height:82px;border-radius:50%;
-  background:linear-gradient(135deg,var(--accent),#4f3ecf);
-  box-shadow:0 0 48px rgba(123,92,255,.6),0 0 96px rgba(123,92,255,.25);
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.9rem;z-index:3;
-  animation:cpulse 3s ease-in-out infinite;
-}
-@keyframes cpulse{
-  0%,100%{box-shadow:0 0 48px rgba(123,92,255,.6),0 0 96px rgba(123,92,255,.25);}
-  50%{box-shadow:0 0 68px rgba(123,92,255,.8),0 0 120px rgba(123,92,255,.4);}
-}
-.rm-ring{
-  position:absolute;top:50%;left:50%;border-radius:50%;
-  border:1px dashed rgba(255,255,255,.1);transform:translate(-50%,-50%);
-}
-.rm-ring-1{width:188px;height:188px;animation:rspin 12s linear infinite;}
-.rm-ring-2{width:300px;height:300px;animation:rspin 20s linear infinite reverse;}
-.rm-ring-3{width:390px;height:390px;animation:rspin 30s linear infinite;}
-@keyframes rspin{from{transform:translate(-50%,-50%) rotate(0deg);}to{transform:translate(-50%,-50%) rotate(360deg);}}
-.rm-node{
-  position:absolute;width:52px;height:52px;border-radius:11px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-size:1.25rem;border:1px solid var(--border-hi);
-  background:rgba(255,255,255,.05);backdrop-filter:blur(10px);
-  box-shadow:0 4px 18px rgba(0,0,0,.4);z-index:4;
-  transition:transform .3s;cursor:default;
-}
-.rm-node:hover{transform:scale(1.15);}
-.rm-node span{font-family:var(--mono);font-size:.42rem;color:var(--muted);margin-top:1px;letter-spacing:.05em;}
-.n-a{top:1%;left:43%;}
-.n-b{top:23%;left:87%;}
-.n-c{top:70%;left:84%;}
-.n-d{top:86%;left:41%;}
-.n-e{top:66%;left:0%;}
-.n-f{top:20%;left:2%;}
 
-.rm-dot{position:absolute;width:6px;height:6px;border-radius:50%;
-  background:var(--accent2);box-shadow:0 0 8px var(--accent2);z-index:5;}
-.rd1{animation:rf1 3s ease-in-out infinite;}
-.rd2{animation:rf2 3.5s ease-in-out .8s infinite;}
-.rd3{animation:rf3 2.8s ease-in-out 1.5s infinite;}
-@keyframes rf1{0%{top:46%;left:50%;opacity:0;}20%{opacity:1;}100%{top:1%;left:46%;opacity:0;}}
-@keyframes rf2{0%{top:50%;left:54%;opacity:0;}20%{opacity:1;}100%{top:24%;left:89%;opacity:0;}}
-@keyframes rf3{0%{top:54%;left:48%;opacity:0;}20%{opacity:1;}100%{top:86%;left:43%;opacity:0;}}
+.hero-btns {
+  display: flex; gap: .85rem; flex-wrap: wrap;
+  margin-bottom: 2.6rem;
+  animation: fade-up .5s .21s ease both;
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: .55rem;
+  background: linear-gradient(135deg, var(--p), #4338ca);
+  color: #fff; border: none; border-radius: 10px;
+  font-family: var(--body); font-size: .9rem; font-weight: 600;
+  padding: .78rem 1.75rem; cursor: pointer; text-decoration: none;
+  box-shadow: 0 4px 22px rgba(99,102,241,.4);
+  transition: transform .2s, box-shadow .2s;
+}
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(99,102,241,.55); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: transparent; color: var(--text);
+  border: 1px solid rgba(99,102,241,.38); border-radius: 10px;
+  font-family: var(--body); font-size: .9rem; font-weight: 500;
+  padding: .78rem 1.75rem; cursor: pointer; text-decoration: none;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.btn-ghost:hover { background: rgba(99,102,241,.08); border-color: var(--p2); transform: translateY(-1px); }
 
-/* ── SECTIONS ── */
-.rm-section{padding:90px 5vw;position:relative;}
-.rm-section-alt{background:rgba(255,255,255,.018);}
-.rm-tag{
-  font-family:var(--mono);font-size:.68rem;letter-spacing:.2em;
-  text-transform:uppercase;color:var(--accent);
-  margin-bottom:.7rem;display:block;
+/* stats strip — identical to app.py surface style */
+.stats-strip {
+  display: flex; border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+  animation: fade-up .5s .28s ease both;
+  background: var(--surf);
+  backdrop-filter: blur(14px);
 }
-.rm-title{
-  font-family:var(--display);font-size:clamp(1.8rem,3.5vw,2.7rem);
-  font-weight:800;letter-spacing:-.03em;color:#fff;
-  line-height:1.12;margin-bottom:.9rem;
+.stat-cell {
+  flex: 1; padding: 1.15rem .9rem;
+  border-right: 1px solid var(--border); text-align: center;
 }
-.rm-sub{font-size:.98rem;line-height:1.75;color:var(--muted);max-width:600px;margin-bottom:3rem;}
-.rm-center-text{text-align:center;}
-.rm-center-text .rm-sub{margin-left:auto;margin-right:auto;}
-.rm-two-col{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;}
+.stat-cell:last-child { border-right: none; }
+.stat-val {
+  font-family: var(--dp); font-size: 1.65rem; font-weight: 800;
+  letter-spacing: -.04em;
+  background: linear-gradient(135deg, #fff, var(--p2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.stat-lbl { font-size: .6rem; color: var(--muted); margin-top: 3px; font-family: var(--mono); letter-spacing: .1em; }
 
-/* ── CARDS ── */
-.rm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.4rem;}
-.rm-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1.2rem;}
-.rm-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:15px;
-  padding:1.8rem;position:relative;overflow:hidden;
-  backdrop-filter:blur(12px);
-  transition:border-color .3s,transform .3s,box-shadow .3s;
+/* ── RIGHT COLUMN: diagram ── */
+.hero-right {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  height: 500px;
+  animation: fade-in .8s .15s ease both;
 }
-.rm-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--accent),transparent);
-  opacity:0;transition:opacity .3s;
-}
-.rm-card:hover{
-  border-color:var(--border-hi);transform:translateY(-4px);
-  box-shadow:0 20px 50px rgba(0,0,0,.4),0 0 0 1px rgba(123,92,255,.1);
-}
-.rm-card:hover::before{opacity:1;}
-.rm-card-icon{
-  width:46px;height:46px;border-radius:11px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.3rem;margin-bottom:1.1rem;
-  background:linear-gradient(135deg,rgba(123,92,255,.2),rgba(0,200,255,.1));
-  border:1px solid rgba(123,92,255,.2);
-}
-.rm-card-title{font-family:var(--display);font-size:1rem;font-weight:700;color:#fff;margin-bottom:.5rem;letter-spacing:-.02em;}
-.rm-card-desc{font-size:.85rem;line-height:1.65;color:var(--muted);}
+@keyframes fade-in { from{opacity:0;} to{opacity:1;} }
 
-/* ── BENEFIT CARDS ── */
-.rm-bcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.2rem;}
-.rm-bcard{
-  background:var(--surface);border:1px solid var(--border);border-radius:13px;
-  padding:1.4rem 1.6rem;display:flex;align-items:flex-start;gap:1rem;
-  backdrop-filter:blur(10px);transition:border-color .25s,transform .25s;
+/* diagram container */
+.diagram {
+  position: relative;
+  width: 420px; height: 420px;
 }
-.rm-bcard:hover{border-color:var(--border-hi);transform:translateY(-3px);}
-.rm-bcard-icon{font-size:1.35rem;flex-shrink:0;margin-top:2px;}
-.rm-bcard h4{font-family:var(--display);font-size:.93rem;font-weight:700;color:#fff;margin-bottom:.3rem;letter-spacing:-.02em;}
-.rm-bcard p{font-size:.8rem;line-height:1.6;color:var(--muted);}
 
-/* ── WORKFLOW ── */
-.rm-workflow{display:flex;flex-direction:column;max-width:680px;margin:0 auto;}
-.rm-step{display:flex;gap:1.5rem;align-items:flex-start;padding:1.4rem 0;position:relative;}
-.rm-step-line{position:absolute;left:23px;top:56px;bottom:-10px;width:2px;background:linear-gradient(to bottom,var(--accent),transparent);}
-.rm-step:last-child .rm-step-line{display:none;}
-.rm-step-num{
-  width:48px;height:48px;border-radius:11px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:.82rem;font-weight:600;
-  background:linear-gradient(135deg,var(--accent),#4f3ecf);
-  box-shadow:0 4px 18px rgba(123,92,255,.35);color:#fff;position:relative;z-index:1;
+/* glow blobs */
+.gblob {
+  position: absolute; border-radius: 50%;
+  filter: blur(65px); pointer-events: none;
 }
-.rm-step h4{font-family:var(--display);font-size:1rem;font-weight:700;color:#fff;margin-bottom:.35rem;letter-spacing:-.02em;}
-.rm-step p{font-size:.86rem;line-height:1.65;color:var(--muted);}
-.rm-step-body{padding-top:.4rem;}
+.gb1 { width: 260px; height: 260px; background: rgba(99,102,241,.2);  top: 8%;  left: 4%; }
+.gb2 { width: 180px; height: 180px; background: rgba(34,211,238,.13); bottom: 8%; right: 2%; }
+.gb3 { width: 130px; height: 130px; background: rgba(244,63,94,.1);   top: 28%; right: 1%; }
 
-/* ── USE CASES ── */
-.rm-ucards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.4rem;}
-.rm-ucard{
-  background:var(--surface);border:1px solid var(--border);border-radius:15px;
-  padding:1.8rem 1.6rem;position:relative;overflow:hidden;
-  backdrop-filter:blur(10px);transition:border-color .3s,transform .3s;
+/* orbit rings */
+.ring {
+  position: absolute; top: 50%; left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
-.rm-ucard::after{
-  content:'';position:absolute;bottom:-30px;right:-30px;
-  width:100px;height:100px;border-radius:50%;
-  background:radial-gradient(circle,rgba(123,92,255,.12),transparent 70%);
-  pointer-events:none;
+.r1 { width: 158px; height: 158px; border: 1px solid rgba(99,102,241,.28); animation: spin 13s linear infinite; }
+.r2 { width: 272px; height: 272px; border: 1px dashed rgba(255,255,255,.07); animation: spin 21s linear infinite reverse; }
+.r3 { width: 388px; height: 388px; border: 1px solid rgba(255,255,255,.04); animation: spin 34s linear infinite; }
+@keyframes spin {
+  from { transform: translate(-50%,-50%) rotate(0deg); }
+  to   { transform: translate(-50%,-50%) rotate(360deg); }
 }
-.rm-ucard:hover{border-color:var(--border-hi);transform:translateY(-4px);}
-.rm-ucard-icon{font-size:1.8rem;margin-bottom:.9rem;}
-.rm-ucard h4{font-family:var(--display);font-size:.98rem;font-weight:700;color:#fff;margin-bottom:.45rem;letter-spacing:-.02em;}
-.rm-ucard p{font-size:.83rem;line-height:1.65;color:var(--muted);}
 
-/* ── CTA ── */
-.rm-cta{
-  padding:110px 5vw;text-align:center;position:relative;overflow:hidden;
+/* center node */
+.cnode {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 74px; height: 74px; border-radius: 20px;
+  background: linear-gradient(135deg, var(--p), #4338ca);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.7rem; z-index: 5;
+  box-shadow: 0 0 48px rgba(99,102,241,.6), 0 0 96px rgba(99,102,241,.22);
+  animation: glow-beat 3s ease-in-out infinite;
 }
-.rm-cta-bg{
-  position:absolute;inset:0;z-index:0;pointer-events:none;
+@keyframes glow-beat {
+  0%,100% { box-shadow: 0 0 48px rgba(99,102,241,.6), 0 0 96px rgba(99,102,241,.22); }
+  50%      { box-shadow: 0 0 68px rgba(99,102,241,.88), 0 0 124px rgba(99,102,241,.4); }
+}
+
+/* agent nodes — 6 evenly spaced on a circle (60deg apart) */
+.anode {
+  position: absolute;
+  width: 54px; height: 54px; border-radius: 13px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 1.22rem; z-index: 6;
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(255,255,255,.11);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  transition: transform .3s, box-shadow .3s;
+  cursor: default;
+}
+.anode:hover { transform: scale(1.18) !important; box-shadow: 0 8px 28px rgba(99,102,241,.4); }
+.albl { font-family: var(--mono); font-size: .37rem; color: var(--muted); margin-top: 1px; letter-spacing: .06em; }
+
+/*
+  6 agents on radius=140px circle, spaced 60deg apart.
+  0deg=top, going clockwise.
+  center = 210px,210px (half of 420px)
+  r = 140
+  pos(deg) => left = 210 + 140*sin(deg) - 27, top = 210 - 140*cos(deg) - 27
+*/
+.a0 { left: 183px; top:  43px; } /* 0deg   — top center     */
+.a1 { left: 304px; top: 113px; } /* 60deg  — top right      */
+.a2 { left: 304px; top: 253px; } /* 120deg — bottom right   */
+.a3 { left: 183px; top: 323px; } /* 180deg — bottom center  */
+.a4 { left:  62px; top: 253px; } /* 240deg — bottom left    */
+.a5 { left:  62px; top: 113px; } /* 300deg — top left       */
+
+/* animated data packets */
+.pkt {
+  position: absolute; width: 7px; height: 7px; border-radius: 50%; z-index: 7;
+}
+.pk1 { background: var(--cyan);    box-shadow: 0 0 10px var(--cyan);    animation: pmove1 2.8s ease-in-out infinite; }
+.pk2 { background: var(--p2);     box-shadow: 0 0 10px var(--p2);     animation: pmove2 3.4s ease-in-out .6s infinite; }
+.pk3 { background: var(--emerald);box-shadow: 0 0 10px var(--emerald);animation: pmove3 2.5s ease-in-out 1.3s infinite; }
+.pk4 { background: var(--rose);   box-shadow: 0 0 10px var(--rose);   animation: pmove4 3.1s ease-in-out 2s infinite; }
+
+/* packets travel from center outward to each agent */
+@keyframes pmove1 { 0%{top:207px;left:207px;opacity:0;} 15%{opacity:1;} 100%{top:57px;left:193px;opacity:0;} }
+@keyframes pmove2 { 0%{top:207px;left:207px;opacity:0;} 15%{opacity:1;} 100%{top:127px;left:311px;opacity:0;} }
+@keyframes pmove3 { 0%{top:207px;left:207px;opacity:0;} 15%{opacity:1;} 100%{top:336px;left:193px;opacity:0;} }
+@keyframes pmove4 { 0%{top:207px;left:207px;opacity:0;} 15%{opacity:1;} 100%{top:267px;left: 68px;opacity:0;} }
+
+/* ════ ANIMATIONS ════ */
+@keyframes fade-up {
+  from { opacity:0; transform: translateY(18px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ════ SECTIONS — same surface/border as app.py cards ════ */
+.section { padding: 88px 6vw; position: relative; }
+.section-alt { background: rgba(255,255,255,.016); }
+
+.section-tag {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .2em;
+  text-transform: uppercase; color: var(--p2);
+  display: block; margin-bottom: .7rem;
+}
+.section-title {
+  font-family: var(--dp) !important;
+  font-size: clamp(1.8rem, 3vw, 2.65rem) !important;
+  font-weight: 800 !important; letter-spacing: -.04em !important;
+  color: #fff !important; line-height: 1.1 !important;
+  margin-bottom: .85rem !important;
+}
+.section-sub {
+  font-size: .93rem; line-height: 1.78; color: var(--muted2);
+  max-width: 560px; margin-bottom: 3rem;
+}
+.centered { text-align: center; }
+.centered .section-sub { margin-left: auto; margin-right: auto; }
+
+/* two-col */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 4.5rem; align-items: center; }
+
+/* ════ FEATURE CARDS — same style as result-wrap in app.py ════ */
+.fgrid   { display: grid; grid-template-columns: repeat(auto-fit, minmax(255px,1fr)); gap: 1.2rem; }
+.fgrid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+.fcard {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.6rem;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(14px);
+  transition: border-color .3s, transform .3s, box-shadow .3s;
+}
+.fcard::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--p), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.fcard:hover { border-color: rgba(99,102,241,.32); transform: translateY(-4px); box-shadow: 0 14px 42px rgba(0,0,0,.5); }
+.fcard:hover::before { opacity: 1; }
+.fcard-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(99,102,241,.2), rgba(34,211,238,.08));
+  border: 1px solid rgba(99,102,241,.18);
+}
+.fcard-title { font-family: var(--dp); font-size: .92rem; font-weight: 700; color: #fff; margin-bottom: .4rem; letter-spacing: -.02em; }
+.fcard-desc  { font-size: .8rem; line-height: 1.65; color: var(--muted2); }
+
+/* ════ WORKFLOW ════ */
+.workflow { max-width: 640px; margin: 0 auto; }
+.wstep { display: flex; gap: 1.4rem; align-items: flex-start; padding: 1.15rem 0; position: relative; }
+.wstep-line { position: absolute; left: 21px; top: 52px; bottom: -10px; width: 2px; background: linear-gradient(to bottom, var(--p), transparent); }
+.wstep:last-child .wstep-line { display: none; }
+.wstep-num {
+  width: 44px; height: 44px; border-radius: 11px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: .78rem; font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, var(--p), #4338ca);
+  box-shadow: 0 4px 16px rgba(99,102,241,.32); position: relative; z-index: 1;
+}
+.wstep-body { padding-top: .3rem; }
+.wstep-title { font-family: var(--dp); font-size: .92rem; font-weight: 700; color: #fff; margin-bottom: .26rem; letter-spacing: -.02em; }
+.wstep-desc  { font-size: .8rem; line-height: 1.65; color: var(--muted2); }
+
+/* ════ BENEFIT CARDS ════ */
+.bgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px,1fr)); gap: 1rem; }
+.bcard {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: 13px; padding: 1.3rem 1.4rem;
+  display: flex; align-items: flex-start; gap: .85rem;
+  backdrop-filter: blur(10px); transition: border-color .25s, transform .25s;
+}
+.bcard:hover { border-color: rgba(99,102,241,.3); transform: translateY(-3px); }
+.bcard-icon  { font-size: 1.22rem; flex-shrink: 0; margin-top: 1px; }
+.bcard-title { font-family: var(--dp); font-size: .87rem; font-weight: 700; color: #fff; margin-bottom: .22rem; letter-spacing: -.02em; }
+.bcard-desc  { font-size: .76rem; line-height: 1.6; color: var(--muted2); }
+
+/* ════ USE CASE CARDS ════ */
+.ugrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px,1fr)); gap: 1.2rem; }
+.ucard {
+  background: var(--surf); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.65rem 1.5rem;
+  position: relative; overflow: hidden;
+  backdrop-filter: blur(10px); transition: border-color .3s, transform .3s;
+}
+.ucard::after {
+  content: ''; position: absolute; bottom: -22px; right: -22px;
+  width: 80px; height: 80px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,.13), transparent 70%);
+  pointer-events: none;
+}
+.ucard:hover { border-color: rgba(99,102,241,.32); transform: translateY(-4px); }
+.ucard-icon  { font-size: 1.6rem; margin-bottom: .82rem; }
+.ucard-title { font-family: var(--dp); font-size: .9rem; font-weight: 700; color: #fff; margin-bottom: .38rem; letter-spacing: -.02em; }
+.ucard-desc  { font-size: .78rem; line-height: 1.65; color: var(--muted2); }
+
+/* ════ CTA ════ */
+.cta-wrap { padding: 106px 6vw; text-align: center; position: relative; overflow: hidden; }
+.cta-glow {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 70% at 50% 50%,rgba(123,92,255,.12) 0%,transparent 70%),
-    radial-gradient(ellipse 40% 50% at 20% 30%,rgba(0,200,255,.07) 0%,transparent 60%);
+    radial-gradient(ellipse 62% 62% at 50% 50%, rgba(99,102,241,.12) 0%, transparent 65%),
+    radial-gradient(ellipse 36% 42% at 18% 22%, rgba(34,211,238,.07) 0%, transparent 55%);
 }
-.rm-cta>*{position:relative;z-index:1;}
-.rm-cta h2{
-  font-family:var(--display);font-size:clamp(2rem,4vw,3.1rem);
-  font-weight:800;letter-spacing:-.04em;color:#fff;
-  line-height:1.1;margin-bottom:1.2rem;
+.cta-wrap > * { position: relative; z-index: 1; }
+.cta-title {
+  font-family: var(--dp) !important;
+  font-size: clamp(2rem, 3.8vw, 3.1rem) !important;
+  font-weight: 800 !important; letter-spacing: -.05em !important;
+  color: #fff !important; line-height: 1.08 !important;
+  margin-bottom: 1.15rem !important;
 }
-.rm-cta>p{font-size:1rem;line-height:1.75;color:var(--muted);max-width:500px;margin:0 auto 2.4rem;}
-.rm-cta-btns{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;}
+.cta-sub { font-size: .93rem; line-height: 1.75; color: var(--muted2); max-width: 455px; margin: 0 auto 2.3rem; }
 
-/* ── FOOTER ── */
-.rm-footer{
-  padding:1.8rem 5vw;border-top:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  font-size:.78rem;color:var(--muted);flex-wrap:wrap;gap:1rem;
+/* ════ FOOTER ════ */
+.footer {
+  padding: 1.6rem 6vw; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem; font-size: .72rem; color: var(--muted);
 }
-.rm-footer-logo{
-  font-family:var(--display);font-weight:700;font-size:.95rem;
-  background:linear-gradient(90deg,#fff 30%,var(--accent));
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+.footer-brand { font-family: var(--dp); font-weight: 800; font-size: .9rem; color: #fff; letter-spacing: -.02em; }
+
+/* ════ PARTICLES ════ */
+.particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+.pt {
+  position: absolute; border-radius: 50%;
+  animation: pfloat linear infinite;
 }
-
-/* ── PARTICLES ── */
-.rm-particles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
-.rm-particle{
-  position:absolute;border-radius:50%;background:var(--accent);opacity:.15;
-  animation:pfloat linear infinite;
+@keyframes pfloat {
+  0%   { transform: translateY(105vh) scale(0); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateY(-8vh) scale(1); opacity: 0; }
 }
-@keyframes pfloat{
-  0%{transform:translateY(100vh) scale(0);opacity:0;}
-  10%{opacity:.15;}90%{opacity:.15;}100%{transform:translateY(-10vh) scale(1);opacity:0;}
-}
+</style>""")
 
-/* ── ANIMATIONS ── */
-@keyframes fade-up{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:translateY(0);}}
-.au1{animation:fade-up .6s ease both;}
-.au2{animation:fade-up .6s .1s ease both;}
-.au3{animation:fade-up .6s .2s ease both;}
-.au4{animation:fade-up .6s .3s ease both;}
-.au5{animation:fade-up .6s .4s ease both;}
-</style>
-""", unsafe_allow_html=True)
+# ── PARTICLES ──
+H("""<div class="particles">
+  <div class="pt" style="width:3px;height:3px;left:7%;background:#6366f1;animation-duration:21s;animation-delay:0s;opacity:.18;"></div>
+  <div class="pt" style="width:4px;height:4px;left:21%;background:#22d3ee;animation-duration:27s;animation-delay:5s;opacity:.13;"></div>
+  <div class="pt" style="width:3px;height:3px;left:42%;background:#818cf8;animation-duration:19s;animation-delay:9s;opacity:.17;"></div>
+  <div class="pt" style="width:5px;height:5px;left:61%;background:#6366f1;animation-duration:24s;animation-delay:2s;opacity:.11;"></div>
+  <div class="pt" style="width:3px;height:3px;left:79%;background:#22d3ee;animation-duration:29s;animation-delay:12s;opacity:.15;"></div>
+  <div class="pt" style="width:4px;height:4px;left:91%;background:#f43f5e;animation-duration:22s;animation-delay:7s;opacity:.11;"></div>
+</div>""")
 
-
-# ── Helper: render a block of HTML safely ─────────────────────────────────────
-def html(content: str):
-    st.markdown(content, unsafe_allow_html=True)
-
-
-# ══════════════════════════════════════════════════════════════════════════════
-#  PARTICLES + NAVBAR
-# ══════════════════════════════════════════════════════════════════════════════
-html(f"""
-<div class="rm-particles" aria-hidden="true">
-  <div class="rm-particle" style="width:4px;height:4px;left:10%;animation-duration:18s;animation-delay:0s;"></div>
-  <div class="rm-particle" style="width:3px;height:3px;left:25%;animation-duration:22s;animation-delay:3s;"></div>
-  <div class="rm-particle" style="width:5px;height:5px;left:45%;animation-duration:16s;animation-delay:6s;background:#00c8ff;"></div>
-  <div class="rm-particle" style="width:3px;height:3px;left:65%;animation-duration:25s;animation-delay:1s;"></div>
-  <div class="rm-particle" style="width:4px;height:4px;left:82%;animation-duration:20s;animation-delay:8s;"></div>
-</div>
-
-<nav class="rm-nav">
-  <div class="rm-logo">Research<span>Mind</span></div>
-  <ul class="rm-nav-links">
+# ── NAVBAR ──
+H(f"""<nav class="nav">
+  <div class="nav-logo">Research<span>Mind</span></div>
+  <ul class="nav-links">
     <li><a href="#features">Features</a></li>
     <li><a href="#workflow">Workflow</a></li>
     <li><a href="#benefits">Benefits</a></li>
     <li><a href="#contact">Contact</a></li>
   </ul>
-  <a href="{auth_url}" class="rm-btn-nav">🔐 Sign in with Google</a>
-</nav>
-""")
+  <a href="{auth_url}" class="nav-cta">&#128272; Sign in with Google</a>
+</nav>""")
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  HERO — left side
-# ══════════════════════════════════════════════════════════════════════════════
-html(f"""
-<section class="rm-hero" id="home">
-  <div class="rm-hero-bg"></div>
-  <div class="rm-hero-left">
-    <div class="rm-badge au1">MULTI-AGENT AI RESEARCH PLATFORM</div>
-    <h1 class="au2">
+# ── HERO — single call (both columns in one markdown to keep flex layout intact) ──
+H(f"""<section class="hero-section" id="home">
+  <div class="hero-mesh"></div>
+  <div class="hero-dots"></div>
+
+  <!-- LEFT COLUMN -->
+  <div class="hero-left">
+    <div class="eyebrow"><span class="eyebrow-dot"></span>MULTI-AGENT AI RESEARCH PLATFORM</div>
+    <h1 class="hero-h1">
       AI-Powered<br>
-      <span class="rm-grad">Multi-Agent</span><br>
+      <span class="hero-grad">Multi-Agent</span><br>
       Research Platform
     </h1>
-    <p class="rm-hero-sub au3">
-      ResearchMind automates complex research workflows using multiple AI agents
-      working together. Collect insights, validate sources, analyze information,
-      and generate professional reports in minutes instead of hours.
+    <p class="hero-sub">
+      ResearchMind automates complex research workflows using specialized AI agents
+      working in concert &#8212; collecting insights, validating sources, analyzing
+      findings, and generating professional reports in minutes, not hours.
     </p>
-    <div class="rm-hero-btns au4">
-      <a href="{auth_url}" class="rm-btn-primary">🔐 Continue with Google</a>
-      <a href="#features" class="rm-btn-secondary">Explore Features ↓</a>
+    <div class="hero-btns">
+      <a href="{auth_url}" class="btn-primary">&#128272; Continue with Google</a>
+      <a href="#features" class="btn-ghost">Explore Features &#8595;</a>
     </div>
-    <div class="rm-stats au5">
-      <div class="rm-stat">
-        <div class="rm-stat-val">4×</div>
-        <div class="rm-stat-lbl">Faster Research</div>
-      </div>
-      <div class="rm-stat">
-        <div class="rm-stat-val">6</div>
-        <div class="rm-stat-lbl">AI Agents</div>
-      </div>
-      <div class="rm-stat">
-        <div class="rm-stat-val">99%</div>
-        <div class="rm-stat-lbl">Source Accuracy</div>
-      </div>
-      <div class="rm-stat">
-        <div class="rm-stat-val">∞</div>
-        <div class="rm-stat-lbl">Topics</div>
-      </div>
+    <div class="stats-strip">
+      <div class="stat-cell"><div class="stat-val">4&#215;</div><div class="stat-lbl">FASTER</div></div>
+      <div class="stat-cell"><div class="stat-val">6</div><div class="stat-lbl">AGENTS</div></div>
+      <div class="stat-cell"><div class="stat-val">99%</div><div class="stat-lbl">ACCURACY</div></div>
+      <div class="stat-cell"><div class="stat-val">&#8734;</div><div class="stat-lbl">TOPICS</div></div>
     </div>
   </div>
-""")
 
-# ── Hero — right side (agent diagram) — separate chunk ───────────────────────
-html("""
-  <div class="rm-hero-right">
-    <div class="rm-orb rm-orb-1"></div>
-    <div class="rm-orb rm-orb-2"></div>
-    <div class="rm-diagram">
-      <div class="rm-ring rm-ring-1"></div>
-      <div class="rm-ring rm-ring-2"></div>
-      <div class="rm-ring rm-ring-3"></div>
-      <div class="rm-center">🔬</div>
-      <div class="rm-node n-a">🔍<span>SEARCH</span></div>
-      <div class="rm-node n-b">📄<span>READER</span></div>
-      <div class="rm-node n-c">🧮<span>ANALYST</span></div>
-      <div class="rm-node n-d">📊<span>REPORT</span></div>
-      <div class="rm-node n-e">✅<span>VERIFY</span></div>
-      <div class="rm-node n-f">✍️<span>WRITER</span></div>
-      <div class="rm-dot rd1"></div>
-      <div class="rm-dot rd2"></div>
-      <div class="rm-dot rd3"></div>
+  <!-- RIGHT COLUMN: diagram -->
+  <div class="hero-right">
+    <div class="diagram">
+      <div class="gblob gb1"></div>
+      <div class="gblob gb2"></div>
+      <div class="gblob gb3"></div>
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div class="cnode">&#128302;</div>
+      <div class="anode a0">&#128269;<span class="albl">SEARCH</span></div>
+      <div class="anode a1">&#128196;<span class="albl">READER</span></div>
+      <div class="anode a2">&#129518;<span class="albl">ANALYST</span></div>
+      <div class="anode a3">&#128202;<span class="albl">REPORT</span></div>
+      <div class="anode a4">&#9989;<span class="albl">VERIFY</span></div>
+      <div class="anode a5">&#9997;&#65039;<span class="albl">WRITER</span></div>
+      <div class="pkt pk1"></div>
+      <div class="pkt pk2"></div>
+      <div class="pkt pk3"></div>
+      <div class="pkt pk4"></div>
     </div>
   </div>
 </section>
-""")
+<script>
+<script>
+(function()
+  function fixGrid(){{
+    var hero = document.querySelector(".hero-section");
+    if(!hero){{ setTimeout(fixGrid,150); return; }}
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SECTION 2 — WHY RESEARCHMIND
-# ══════════════════════════════════════════════════════════════════════════════
-html("""
-<section class="rm-section rm-section-alt" id="features">
-  <div class="rm-two-col">
+    var node = hero.parentElement;
+
+    for(var i=0;i<8;i++){{
+
+      if(!node || node.tagName==="BODY") break;
+      if(node.classList.contains("block-container")) break;
+
+      node.style.display="contents";
+      node = node.parentElement;
+    }}
+  }}
+
+</script>""")
+
+# ════ SECTION 2 — WHY ════
+H("""<section class="section section-alt" id="features">
+  <div class="two-col">
     <div>
-      <span class="rm-tag">WHY RESEARCHMIND</span>
-      <h2 class="rm-title">Professional AI Research Automation</h2>
-      <p class="rm-sub" style="margin-bottom:0;">
-        ResearchMind uses a multi-agent architecture where specialized AI agents
-        collaborate to conduct research, validate information, analyze findings,
-        and produce comprehensive research reports. No more manual hours —
-        let agents do the heavy lifting.
+      <span class="section-tag">WHY RESEARCHMIND</span>
+      <h2 class="section-title">Professional AI Research Automation</h2>
+      <p class="section-sub" style="margin-bottom:0;">
+        A multi-agent architecture where specialized AI agents collaborate to conduct
+        research, validate information, analyze findings, and produce comprehensive
+        reports &#8212; no manual hours required.
       </p>
     </div>
-    <div class="rm-grid-2">
-      <div class="rm-card"><div class="rm-card-icon">🤝</div><div class="rm-card-title">Multi-Agent Collaboration</div><div class="rm-card-desc">Specialized agents work in parallel, each handling a distinct part of the research pipeline.</div></div>
-      <div class="rm-card"><div class="rm-card-icon">⚡</div><div class="rm-card-title">Real-Time Research</div><div class="rm-card-desc">Live web search and scraping delivers up-to-date, relevant information instantly.</div></div>
-      <div class="rm-card"><div class="rm-card-icon">📝</div><div class="rm-card-title">Automated Reports</div><div class="rm-card-desc">Structured, professional reports generated automatically from validated insights.</div></div>
-      <div class="rm-card"><div class="rm-card-icon">🛡️</div><div class="rm-card-title">Source Verification</div><div class="rm-card-desc">Every source is cross-checked for credibility before inclusion in the final report.</div></div>
-      <div class="rm-card"><div class="rm-card-icon">🧠</div><div class="rm-card-title">Intelligent Summarization</div><div class="rm-card-desc">Key insights distilled into concise executive summaries for quick decision-making.</div></div>
-      <div class="rm-card"><div class="rm-card-icon">📤</div><div class="rm-card-title">Export to PDF</div><div class="rm-card-desc">Download polished, shareable reports in PDF and plain text with one click.</div></div>
+    <div class="fgrid-2">
+      <div class="fcard"><div class="fcard-icon">&#129309;</div><div class="fcard-title">Multi-Agent Collaboration</div><div class="fcard-desc">Specialized agents work in parallel, each handling a distinct stage of the research pipeline.</div></div>
+      <div class="fcard"><div class="fcard-icon">&#9889;</div><div class="fcard-title">Real-Time Research</div><div class="fcard-desc">Live web search and scraping delivers up-to-date, relevant information instantly.</div></div>
+      <div class="fcard"><div class="fcard-icon">&#128221;</div><div class="fcard-title">Automated Reports</div><div class="fcard-desc">Structured, professional reports generated automatically from validated insights.</div></div>
+      <div class="fcard"><div class="fcard-icon">&#128737;&#65039;</div><div class="fcard-title">Source Verification</div><div class="fcard-desc">Every source is cross-checked for credibility before inclusion in the final report.</div></div>
+      <div class="fcard"><div class="fcard-icon">&#129504;</div><div class="fcard-title">Smart Summarization</div><div class="fcard-desc">Key insights distilled into concise executive summaries for fast decision-making.</div></div>
+      <div class="fcard"><div class="fcard-icon">&#128228;</div><div class="fcard-title">Export to PDF</div><div class="fcard-desc">Download polished, shareable reports in PDF and plain text with one click.</div></div>
     </div>
   </div>
-</section>
-""")
+</section>""")
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SECTION 3 — WORKFLOW
-# ══════════════════════════════════════════════════════════════════════════════
-html("""
-<section class="rm-section" id="workflow">
-  <div class="rm-center-text">
-    <span class="rm-tag">HOW IT WORKS</span>
-    <h2 class="rm-title">How ResearchMind Works</h2>
-    <p class="rm-sub">Five streamlined stages take you from a raw topic to a polished, validated research report.</p>
+# ════ SECTION 3 — WORKFLOW ════
+H("""<section class="section" id="workflow">
+  <div class="centered">
+    <span class="section-tag">HOW IT WORKS</span>
+    <h2 class="section-title">Five Stages to Insight</h2>
+    <p class="section-sub">From raw topic to polished, validated research report &#8212; fully automated.</p>
   </div>
-  <div class="rm-workflow">
-    <div class="rm-step">
-      <div class="rm-step-line"></div>
-      <div class="rm-step-num">01</div>
-      <div class="rm-step-body"><h4>Enter Research Topic</h4><p>Provide a topic, question, or area of investigation. ResearchMind handles everything from there.</p></div>
-    </div>
-    <div class="rm-step">
-      <div class="rm-step-line"></div>
-      <div class="rm-step-num">02</div>
-      <div class="rm-step-body"><h4>AI Agents Collect Information</h4><p>Specialized agents gather information from multiple web sources simultaneously, scraping the most relevant URLs for deep content.</p></div>
-    </div>
-    <div class="rm-step">
-      <div class="rm-step-line"></div>
-      <div class="rm-step-num">03</div>
-      <div class="rm-step-body"><h4>Validation &amp; Analysis</h4><p>Research findings are verified, filtered, and analyzed. Only credible, relevant content advances to the report stage.</p></div>
-    </div>
-    <div class="rm-step">
-      <div class="rm-step-line"></div>
-      <div class="rm-step-num">04</div>
-      <div class="rm-step-body"><h4>Report Generation</h4><p>Writer and Critic agents collaborate to produce a structured, professionally written report with expert feedback.</p></div>
-    </div>
-    <div class="rm-step">
-      <div class="rm-step-num">05</div>
-      <div class="rm-step-body"><h4>Export &amp; Share</h4><p>Download professional reports in PDF or text format and share results with your team instantly.</p></div>
-    </div>
+  <div class="workflow">
+    <div class="wstep"><div class="wstep-line"></div><div class="wstep-num">01</div><div class="wstep-body"><div class="wstep-title">Enter Research Topic</div><div class="wstep-desc">Provide a topic, question, or area of investigation. ResearchMind handles the rest.</div></div></div>
+    <div class="wstep"><div class="wstep-line"></div><div class="wstep-num">02</div><div class="wstep-body"><div class="wstep-title">AI Agents Collect Information</div><div class="wstep-desc">Agents gather information from multiple web sources simultaneously, scraping the most relevant content for deep analysis.</div></div></div>
+    <div class="wstep"><div class="wstep-line"></div><div class="wstep-num">03</div><div class="wstep-body"><div class="wstep-title">Validation &amp; Analysis</div><div class="wstep-desc">Findings are verified, filtered, and analyzed. Only credible content advances to the report stage.</div></div></div>
+    <div class="wstep"><div class="wstep-line"></div><div class="wstep-num">04</div><div class="wstep-body"><div class="wstep-title">Report Generation</div><div class="wstep-desc">Writer and Critic agents collaborate to produce a structured, professionally written report.</div></div></div>
+    <div class="wstep"><div class="wstep-num">05</div><div class="wstep-body"><div class="wstep-title">Export &amp; Share</div><div class="wstep-desc">Download in PDF or text format and share with your team instantly.</div></div></div>
   </div>
-</section>
-""")
+</section>""")
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SECTION 4 — AGENT CARDS
-# ══════════════════════════════════════════════════════════════════════════════
-html("""
-<section class="rm-section rm-section-alt">
-  <div class="rm-center-text">
-    <span class="rm-tag">AGENT ARCHITECTURE</span>
-    <h2 class="rm-title">Six Specialized AI Agents</h2>
-    <p class="rm-sub">Each agent is purpose-built for a specific stage, working in concert to deliver results no single model could achieve alone.</p>
+# ════ SECTION 4 — AGENTS ════
+H("""<section class="section section-alt">
+  <div class="centered">
+    <span class="section-tag">AGENT ARCHITECTURE</span>
+    <h2 class="section-title">Six Specialized AI Agents</h2>
+    <p class="section-sub">Each agent is purpose-built for one stage, working in concert to deliver results no single model could achieve alone.</p>
   </div>
-  <div class="rm-grid">
-    <div class="rm-card"><div class="rm-card-icon">🔍</div><div class="rm-card-title">Research Agent</div><div class="rm-card-desc">Performs deep web research and information gathering from diverse, authoritative sources across the internet.</div></div>
-    <div class="rm-card"><div class="rm-card-icon">🧮</div><div class="rm-card-title">Analysis Agent</div><div class="rm-card-desc">Processes collected information, identifies patterns, and extracts meaningful, actionable insights.</div></div>
-    <div class="rm-card"><div class="rm-card-icon">✅</div><div class="rm-card-title">Verification Agent</div><div class="rm-card-desc">Cross-checks facts and validates source credibility to ensure every claim is trustworthy.</div></div>
-    <div class="rm-card"><div class="rm-card-icon">📊</div><div class="rm-card-title">Report Agent</div><div class="rm-card-desc">Builds structured, professional-quality research reports with clear sections, citations, and summaries.</div></div>
-    <div class="rm-card"><div class="rm-card-icon">✂️</div><div class="rm-card-title">Summarization Agent</div><div class="rm-card-desc">Creates concise executive summaries and key takeaways tailored for decision-makers.</div></div>
-    <div class="rm-card"><div class="rm-card-icon">📤</div><div class="rm-card-title">Export System</div><div class="rm-card-desc">Exports polished reports in PDF and other professional formats, ready to share with stakeholders.</div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="fcard-icon">&#128269;</div><div class="fcard-title">Research Agent</div><div class="fcard-desc">Deep web research and information gathering from diverse, authoritative sources.</div></div>
+    <div class="fcard"><div class="fcard-icon">&#129518;</div><div class="fcard-title">Analysis Agent</div><div class="fcard-desc">Processes information, identifies patterns, and extracts meaningful actionable insights.</div></div>
+    <div class="fcard"><div class="fcard-icon">&#9989;</div><div class="fcard-title">Verification Agent</div><div class="fcard-desc">Cross-checks facts and validates source credibility &#8212; every claim is trustworthy.</div></div>
+    <div class="fcard"><div class="fcard-icon">&#128202;</div><div class="fcard-title">Report Agent</div><div class="fcard-desc">Builds structured, professional-quality reports with clear sections and summaries.</div></div>
+    <div class="fcard"><div class="fcard-icon">&#9986;&#65039;</div><div class="fcard-title">Summarization Agent</div><div class="fcard-desc">Creates concise executive summaries and key takeaways for decision-makers.</div></div>
+    <div class="fcard"><div class="fcard-icon">&#128228;</div><div class="fcard-title">Export System</div><div class="fcard-desc">Exports polished reports in PDF and professional formats, ready to share.</div></div>
   </div>
-</section>
-""")
+</section>""")
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SECTION 5 — BENEFITS
-# ══════════════════════════════════════════════════════════════════════════════
-html("""
-<section class="rm-section" id="benefits">
-  <div class="rm-center-text">
-    <span class="rm-tag">BENEFITS</span>
-    <h2 class="rm-title">Why Teams Choose ResearchMind</h2>
-    <p class="rm-sub">From solo researchers to enterprise teams, ResearchMind delivers measurable advantages at every scale.</p>
+# ════ SECTION 5 — BENEFITS ════
+H("""<section class="section" id="benefits">
+  <div class="centered">
+    <span class="section-tag">BENEFITS</span>
+    <h2 class="section-title">Why Teams Choose ResearchMind</h2>
+    <p class="section-sub">From solo researchers to enterprise teams &#8212; measurable advantages at every scale.</p>
   </div>
-  <div class="rm-bcards">
-    <div class="rm-bcard"><div class="rm-bcard-icon">⏱️</div><div><h4>Save Hours of Research Time</h4><p>Automated pipelines compress days of manual research into minutes, freeing your team for higher-value work.</p></div></div>
-    <div class="rm-bcard"><div class="rm-bcard-icon">🎯</div><div><h4>Improve Information Accuracy</h4><p>Multi-agent verification catches errors and biases that single-pass research routinely misses.</p></div></div>
-    <div class="rm-bcard"><div class="rm-bcard-icon">📝</div><div><h4>Generate Reports Automatically</h4><p>No more formatting or writing from scratch — ResearchMind delivers publish-ready reports.</p></div></div>
-    <div class="rm-bcard"><div class="rm-bcard-icon">📈</div><div><h4>Scale Research Efficiently</h4><p>Run multiple research pipelines simultaneously without adding headcount or infrastructure.</p></div></div>
-    <div class="rm-bcard"><div class="rm-bcard-icon">🤖</div><div><h4>Collaborate with AI Specialists</h4><p>Each agent brings domain-specific expertise — your research is never left to a generalist alone.</p></div></div>
-    <div class="rm-bcard"><div class="rm-bcard-icon">🗂️</div><div><h4>Centralize Research Workflows</h4><p>One platform for all your research — no more juggling tabs, docs, and fragmented notes.</p></div></div>
+  <div class="bgrid">
+    <div class="bcard"><div class="bcard-icon">&#9201;&#65039;</div><div><div class="bcard-title">Save Hours of Research</div><div class="bcard-desc">Automated pipelines compress days of manual research into minutes.</div></div></div>
+    <div class="bcard"><div class="bcard-icon">&#127919;</div><div><div class="bcard-title">Improve Accuracy</div><div class="bcard-desc">Multi-agent verification catches errors single-pass research routinely misses.</div></div></div>
+    <div class="bcard"><div class="bcard-icon">&#128221;</div><div><div class="bcard-title">Auto-Generate Reports</div><div class="bcard-desc">No formatting from scratch &#8212; ResearchMind delivers publish-ready output.</div></div></div>
+    <div class="bcard"><div class="bcard-icon">&#128200;</div><div><div class="bcard-title">Scale Efficiently</div><div class="bcard-desc">Run multiple pipelines simultaneously without adding headcount.</div></div></div>
+    <div class="bcard"><div class="bcard-icon">&#129302;</div><div><div class="bcard-title">AI Specialist Team</div><div class="bcard-desc">Each agent brings domain expertise &#8212; never left to a generalist alone.</div></div></div>
+    <div class="bcard"><div class="bcard-icon">&#128194;</div><div><div class="bcard-title">Centralize Workflows</div><div class="bcard-desc">One platform for all research &#8212; no more juggling tabs and fragmented notes.</div></div></div>
   </div>
-</section>
-""")
+</section>""")
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SECTION 6 — USE CASES
-# ══════════════════════════════════════════════════════════════════════════════
-html("""
-<section class="rm-section rm-section-alt">
-  <div class="rm-center-text">
-    <span class="rm-tag">USE CASES</span>
-    <h2 class="rm-title">Built For Modern Research</h2>
-    <p class="rm-sub">Whether you're in academia, business, or content creation — ResearchMind adapts to your workflow.</p>
+# ════ SECTION 6 — USE CASES ════
+H("""<section class="section section-alt">
+  <div class="centered">
+    <span class="section-tag">USE CASES</span>
+    <h2 class="section-title">Built For Modern Research</h2>
+    <p class="section-sub">Academia, business, content creation &#8212; ResearchMind adapts to your workflow.</p>
   </div>
-  <div class="rm-ucards">
-    <div class="rm-ucard"><div class="rm-ucard-icon">🎓</div><h4>Academic Research</h4><p>Conduct comprehensive literature reviews and topic research with verified academic and web sources.</p></div>
-    <div class="rm-ucard"><div class="rm-ucard-icon">📉</div><h4>Business Intelligence</h4><p>Analyze markets, competitors, and industry trends with up-to-date, AI-validated insights.</p></div>
-    <div class="rm-ucard"><div class="rm-ucard-icon">✍️</div><h4>Content Research</h4><p>Gather verified, well-structured information for articles, blog posts, and professional reports.</p></div>
-    <div class="rm-ucard"><div class="rm-ucard-icon">♟️</div><h4>Strategic Planning</h4><p>Make informed strategic decisions backed by comprehensive, cross-validated research intelligence.</p></div>
+  <div class="ugrid">
+    <div class="ucard"><div class="ucard-icon">&#127891;</div><div class="ucard-title">Academic Research</div><div class="ucard-desc">Comprehensive literature reviews and topic research with verified sources.</div></div>
+    <div class="ucard"><div class="ucard-icon">&#128201;</div><div class="ucard-title">Business Intelligence</div><div class="ucard-desc">Analyze markets, competitors, and trends with AI-validated insights.</div></div>
+    <div class="ucard"><div class="ucard-icon">&#9997;&#65039;</div><div class="ucard-title">Content Research</div><div class="ucard-desc">Gather verified information for articles, blog posts, and professional reports.</div></div>
+    <div class="ucard"><div class="ucard-icon">&#9822;&#65039;</div><div class="ucard-title">Strategic Planning</div><div class="ucard-desc">Informed decisions backed by comprehensive, cross-validated research intelligence.</div></div>
   </div>
-</section>
-""")
+</section>""")
 
-# ══════════════════════════════════════════════════════════════════════════════
-#  SECTION 7 — CTA + FOOTER
-# ══════════════════════════════════════════════════════════════════════════════
-html(f"""
-<section class="rm-cta" id="contact">
-  <div class="rm-cta-bg"></div>
-  <h2>Ready to Transform<br>Your Research Process?</h2>
-  <p>Join researchers, analysts, students, and professionals using ResearchMind
-     to accelerate knowledge discovery and generate insights at unprecedented speed.</p>
-  <div class="rm-cta-btns">
-    <a href="{auth_url}" class="rm-btn-primary" style="font-size:1.05rem;padding:.95rem 2.2rem;">
-      🔐 Continue with Google — It's Free
-    </a>
-  </div>
+# ════ CTA + FOOTER ════
+H(f"""<section class="cta-wrap" id="contact">
+  <div class="cta-glow"></div>
+  <span class="section-tag" style="justify-content:center;display:block;">GET STARTED</span>
+  <h2 class="cta-title">Ready to Transform<br>Your Research?</h2>
+  <p class="cta-sub">Join researchers, analysts, students, and professionals accelerating knowledge discovery with ResearchMind.</p>
+  <a href="{auth_url}" class="btn-primary" style="display:inline-flex;margin:0 auto;font-size:.95rem;padding:.85rem 2.1rem;">
+    &#128272; Continue with Google &#8212; It&#39;s Free
+  </a>
 </section>
 
-<footer class="rm-footer">
-  <div class="rm-footer-logo">ResearchMind</div>
-  <div>© 2025 ResearchMind. AI-Powered Research Automation.</div>
-  <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);">
-    Built with LangChain + Streamlit
-  </div>
-</footer>
-""")
+<footer class="footer">
+  <div class="footer-brand">ResearchMind</div>
+  <div>&#169; 2025 ResearchMind &middot; AI-Powered Research Automation</div>
+  <div style="font-family:var(--mono);font-size:.62rem;color:var(--muted);">LangChain + Streamlit</div>
+</footer>""")
